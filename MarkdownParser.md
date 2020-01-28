@@ -328,6 +328,20 @@ char s[maxLength];
 
 其中，`#define maxLength 10000`。
 
+#### 5.3 树形
+
+所有网页的交互都依赖这种 DOM 技术。DOM 是一颗树，树枝和树叶都做了编号，通过脚本的函数去寻找哪一个枝干的哪一个叶子，对这个叶子做什么改变。例如
+
+![img](https:////upload-images.jianshu.io/upload_images/16749538-52333c2d67a02215.png?imageMogr2/auto-orient/strip|imageView2/2/w/267/format/webp)
+
+形如一颗倒长的树。一颗家谱树，而家谱树本身就是一种模型，其典型用法是表示表示人类家族谱系。
+
+它很容易表明家族成员之间的关系，把复杂的关系简明地表示出来，因此这种模型非常适合表示一份html的文档：
+
+![img](https:////upload-images.jianshu.io/upload_images/16749538-64b1ae6106efded7.png?imageMogr2/auto-orient/strip|imageView2/2/w/486/format/webp)
+
+
+
 ### 六、具体实现
 
 #### 6.1 处理每行开始处的一些空格和 Tab

@@ -20,7 +20,7 @@ using namespace std;
 // * 2 : <a href = " ">...< / a> | 超链接
 // * 3 : <ul> | 无序列表
 // * 4 : <ol> | 有序列表
-// * 5 : <li> | 列表
+// * 5 : <li> | 列表 使用 <ul> 和 <ol> 进行包裹，最后将整个内容使用 <li> 进行包装。
 // * 6 : <em> | 斜体
 // * 7 : <strong> | 加粗
 // * 8 : <hr / > | 水平分割线
@@ -216,6 +216,58 @@ public:
 	//判断为超链接
 	bool isHref(node *v) {
 		return (v->type == href);
+	}
+
+
+	//************************************
+	// 树操作
+	//************************************
+	//************************************//************************************//************************************
+	//************************************
+	// Method:    findnode
+	// FullName:  MarkdownTransform::findnode
+	// Access:    public 
+	// Returns:   node* 找到的节点指针
+	// Qualifier:
+	// Parameter: int depth 深度
+	// details :  给定树的深度寻找节点
+	//************************************
+	node* findnode(int depth) {
+		node *ptr = root;
+		while (!ptr->ch.empty() && depth) {
+			ptr = ptr->ch.back();//最后一个元素
+			if (ptr->type == li) {
+				depth--;
+			}
+		}
+		return ptr;
+	}
+
+	//************************************//************************************//************************************
+
+	//************************************
+	// Method:    Cins
+	// FullName:  MarkdownTransform::Cins
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: Cnode * v
+	// Parameter: int x ？
+	// Parameter: const string & hd
+	// Parameter: int tag  tag 标签来标记这个目录所指向的内容
+	// details :  递归Cnode节点插入
+	//************************************
+	void Cins(Cnode *v, int x, const string &hd, int tag) {
+		int n = v->ch.size();
+		if (x == 1) {
+			v->ch.push_back(new Cnode(hd));
+			v->ch.back()->tag = "tag" + to_string(tga);
+			return;
+		}
+		if (!n || v->ch.back()->heading.empty()) {
+			v->ch.push_back(new Cnode(""));
+		}
+		Cins(v->ch.back(), x - 1, hd, tag);
 	}
 
 
