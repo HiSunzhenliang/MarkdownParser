@@ -7,6 +7,11 @@
 ************************************/
 #pragma once
 #include <string>
+#include <vector>
+
+using namespace std;
+
+#define maxLength 10000
 
 // * 0: null | 开始
 // * 1 : <p> | 段落
@@ -70,8 +75,104 @@ const std::string backTag[] = {
 	"</code></pre>","</code>"
 };
 
+//保存目录结构
+struct Cnode {
+	vector<Cnode*> ch;
+	string heading;
+	string tag;
+
+	Cnode(const string &hd) :heading(hd) {}
+};
+
+//保存正文内容
+struct node {
+	//节点类型
+	int type;
+	vector<node*> ch;
+	//存三个重要属性，[0]保存显示内容、[1]保存链接、[2]保存title
+	string elem[3];
+
+	node(int _type) :type(_type) {}
+};
+
 class MarkdownTransform {
+private:
+	//内容
+	string contents;
+	//目录
+	string TOC;
+	
+	node *root, *now;
+	Cnode *Croot;
+
+	//让目录能够正确的索引到 HTML 的内容位置， cntTag 的进行记录
+	int cntTag = 0;
+	char s[maxLength];
+
 public:
+
+	//************************************
+	// Method:    start
+	// FullName:  MarkdownTransform::start
+	// Access:    public 
+	// Returns:   std::pair<int, char*> 由空格数和有内容处的 char* 指针组成的 std::pair
+	// Qualifier:
+	// Parameter: char * src 源串
+	// details :  解析一行中开始处的空格和Tab
+	//************************************
+	pair<int, char*> start(char *src) {
+		//如果行空，则返回
+		if (!strlen(src)){
+			return make_pair(0, nullptr);
+		}
+
+		//行前有空格和Tab
+		//统计空格数和Tab数
+		int cntspace = 0;
+		int cnttab = 0;
+		//从该行的第一个字符读其, 统计空格键和 Tab 键,
+		// 当遇到不是空格和 Tab 时，立即停止
+		for (int i = 0; src[i] != '\0';i++) {
+			if (src[i]==' '){
+				cntspace++;
+			}else if (src[i]=='\t'){
+				cnttab++;
+			}
+			// 如果内容前有空格和 Tab，那么将其统一按 Tab 的个数处理,
+			// 其中, 一个 Tab = 四个空格
+			else return make_pair(cnttab + cnttab / 4, src + i);
+		
+		}
+		//行前无空格和Tab
+		return make_pair(0, src);
+	}
+
+
+	//************************************
+	// Method:    JudgeType
+	// FullName:  MarkdownTransform::JudgeType
+	// Access:    public 
+	// Returns:   std::pair<int, char*> 当前行的类型和除去行标志性关键字的正是内容的 char* 指针组成的 std::pair
+	// Qualifier:
+	// Parameter: char * src 源串
+	// details :  判断当前行类型，MD语法关键字位于行首
+	//************************************
+	pair<int, char*> JudgeType(char *src) {
+		char *ptr = src;
+
+		//跳过'#'
+		while (*ptr=='#'){
+			ptr++;
+		}
+
+		//接着出现空格，则是'<h>'标签
+		if (ptr - src > 0 && *ptr == ' ') {
+			return make_pair(ptr - src + h1 - 1, ptr + 1);
+		}
+	}
+
+
+
 	//构造函数
 	MarkdownTransform(const std::string &filename);
 
@@ -87,11 +188,5 @@ public:
 
 	//析构函数
 	~MarkdownTransform();
-
-private:
-	//内容
-	string contents;
-	//目录
-	string TOC;  
 };
 
