@@ -6,8 +6,10 @@
 	* @date    : 2020-1-28
 ************************************/
 #pragma once
+#include <iostream>
 #include <string>
 #include <vector>
+#include <cctype>
 
 using namespace std;
 
@@ -167,8 +169,37 @@ public:
 
 		//接着出现空格，则是'<h>'标签
 		if (ptr - src > 0 && *ptr == ' ') {
-			return make_pair(ptr - src + h1 - 1, ptr + 1);
+			return make_pair(ptr - src + h1 - 1, ptr + 1);//累加判断几级标题
 		}
+
+		//重置分析位置
+		ptr = src;
+
+		//出现 ```则是代码块
+		if (!strncmp(ptr, "```", 3)) {
+			return make_pair(blockcode, ptr + 3);
+		}
+
+		//如果出现 (* +) -, 并且他们的下一个字符为空格，则说明是无序列表
+		if (!strncmp(ptr, "- ", 2)) {
+			return make_pair(ul, ptr + 1);
+		}
+		// 如果出现的是数字, 且下一个字符是 '.',下下个空格，则说明是是有序列表
+		char *ptr1 = ptr;
+		while (*ptr1 && (isdigit(*ptr1))) {
+			ptr1++;
+		}
+		if (ptr1 != ptr && *ptr1 == '.'&&ptr1[1] == ' ') {
+			return make_pair(ol, ptr1 + 1);
+		}
+
+		//如果出现 > 且下一个字符为空格，则说明是引用
+		if (!strncmp(ptr, ">  ", 2)) {
+			return make_pair(quote, ptr + 1);
+		}
+
+		//否则就是普通段落
+		return make_pair(paragraph, ptr);
 	}
 
 
