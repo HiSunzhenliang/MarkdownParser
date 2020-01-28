@@ -91,7 +91,7 @@ struct node {
 	//节点类型
 	int type;
 	vector<node*> ch;
-	//存三个重要属性，[0]保存显示内容、[1]保存链接、[2]保存title
+	//存三个重要属性，elem[0]保存显示内容、elem[1]保存链接、elem[2]保存title
 	string elem[3];
 
 	node(int _type) :type(_type) {}
@@ -201,6 +201,23 @@ public:
 		//否则就是普通段落
 		return make_pair(paragraph, ptr);
 	}
+	
+	//************************************
+	//类型获取
+	//************************************
+	// 判断是否为标题
+	bool isHeading(node *v) {
+		return (v->type >= h1 && v->type <= h6);
+	}
+	// 判断是否为图片
+	bool isImage(node *v) {
+		return (v->type == image);
+	}
+	//判断为超链接
+	bool isHref(node *v) {
+		return (v->type == href);
+	}
+
 
 
 
