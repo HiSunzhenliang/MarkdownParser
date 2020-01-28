@@ -89,6 +89,9 @@ public:
 	~MarkdownTransform();
 
 private:
-	string contents, TOC;
+	//ÄÚÈİ
+	string contents;
+	//Ä¿Â¼
+	string TOC;  
 };
 
