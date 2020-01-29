@@ -45,7 +45,7 @@ MarkdownParser
 
 Markdown 的语法非常简单，下面是一些常用的语法：
 
-```
+```markdown
 ## 标题
 
 # 一级标题
@@ -86,6 +86,8 @@ function method()
 可以看到，Markdown 的语法之所以不复杂，是因为它的大部分词法规则都位于行首。这就为我们快速编写一个简单的 Markdown 解析器提供了方便之处。
 
 唯一需要考虑的，就是诸如链接、图片、代码、粗体、斜体等这些特殊的标记。
+
+行内连接 [github](https://github.com/ "title") 的链接
 
 ### 三、测试驱动
 
@@ -154,7 +156,7 @@ int main() {
 >
 > 来获取这个命令工具，使用方法如图所示：
 >
-> ![此处输入图片的描述](https://doc.shiyanlou.com/document-uid29879labid1958timestamp1469785260448.png/wm)
+> ![图片](https://doc.shiyanlou.com/document-uid29879labid1958timestamp1469785260448.png/wm "这样")
 
 
 
