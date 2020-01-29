@@ -1,39 +1,39 @@
-/************************************ 
-	* @file    : main.cpp
-	* @brief   : 
-	* @details : 
-	* @author  : Alliswell
-	* @date    : 2020-1-28
-************************************/
+/************************************
+ * @file    : main.cpp
+ * @brief   :
+ * @details :
+ * @author  : Alliswell
+ * @date    : 2020-1-28
+ ************************************/
 
 #include <fstream>
 #include "mdtransform.h"
 
-
 int main() {
-	//×°ÔØMDÎÄ¼ş
-	MarkdownTransform transformer("test.md");
-	
-	//Ê¹ÓÃgetTableOfContens()»ñÈ¡MDÎÄ¼şHTML¸ñÊ½Ä¿Â¼
-	std::string table = transformer.getTableOfContents();
+    //è£…è½½MDæ–‡ä»¶
+    MarkdownTransform transformer("test.md");
 
-	//Ê¹ÓÃgetContens()»ñÈ¡×ª»»ºóµÄHTMLÄÚÈİ
-	std::string contens = transformer.getContents();
+    //ä½¿ç”¨getTableOfContens()è·å–MDæ–‡ä»¶HTMLæ ¼å¼ç›®å½•
+    std::string table = transformer.getTableOfContents();
 
-	//Ğ´ÈëHTMLÎÄ¼şµÄÍ·Î²ĞÅÏ¢
-	std::string head = "<!DOCTYPE html><html><head>\
+    //ä½¿ç”¨getContens()è·å–è½¬æ¢åçš„HTMLå†…å®¹
+    std::string contents = transformer.getContents();
+
+    //å†™å…¥HTMLæ–‡ä»¶çš„å¤´å°¾ä¿¡æ¯
+    std::string head =
+        "<!DOCTYPE html><html><head>\
         <meta charset=\"utf-8\">\
         <title>Markdown</title>\
         <link rel=\"stylesheet\" href=\"github-markdown.css\">\
         </head><body><article class=\"markdown-body\">";
-	std::string end = "</article></body></html>";
+    std::string end = "</article></body></html>";
 
-	//Ğ´ÈëÎÄ¼ş
-	std::ofstream out;
-	out.open("output/index.html");
-	//×ª»»ºóÄÚÈİĞ´ÈëHTMLµÄ<article></article> ±êÇ©ÄÚ²¿
-	out << head + table + contens + end;
-	out.close();
+    //å†™å…¥æ–‡ä»¶t
+    std::ofstream out;
+    out.open("output/index.html");
+    //è½¬æ¢åå†…å®¹å†™å…¥HTMLçš„<article></article> æ ‡ç­¾å†…éƒ¨
+    out << head + table + contents + end;
+    out.close();
 
-	return 0;
+    return 0;
 }

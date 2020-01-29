@@ -1,635 +1,742 @@
-/************************************ 
-	* @file    : mdtransform.h
-	* @brief   : 
-	* @details : 
-	* @author  : Alliswell
-	* @date    : 2020-1-28
-************************************/
+/************************************
+ * @file    : mdtransform.h
+ * @brief   :
+ * @details :
+ * @author  : Alliswell
+ * @date    : 2020-1-28
+ ************************************/
 #pragma once
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
-#include <cctype>
 
 using namespace std;
 
 #define maxLength 10000
 
-// * 0: null | ¿ªÊ¼
-// * 1 : <p> | ¶ÎÂä
-// * 2 : <a href = " ">...< / a> | ³¬Á´½Ó
-// * 3 : <ul> | ÎŞĞòÁĞ±í
-// * 4 : <ol> | ÓĞĞòÁĞ±í
-// * 5 : <li> | ÁĞ±í Ê¹ÓÃ <ul> ºÍ <ol> ½øĞĞ°ü¹ü£¬×îºó½«Õû¸öÄÚÈİÊ¹ÓÃ <li> ½øĞĞ°ü×°¡£
-// * 6 : <em> | Ğ±Ìå
-// * 7 : <strong> | ¼Ó´Ö
-// * 8 : <hr / > | Ë®Æ½·Ö¸îÏß
-// * 9 : <br / > | »»ĞĞ
-// * 10 : <img alt = "" src = "" / > | Í¼Æ¬
-// * 11 : <blockquote> | ÒıÓÃ
+// * 0: null | å¼€å§‹
+// * 1 : <p> | æ®µè½
+// * 2 : <a href = " ">...< / a> | è¶…é“¾æ¥
+// * 3 : <ul> | æ— åºåˆ—è¡¨
+// * 4 : <ol> | æœ‰åºåˆ—è¡¨
+// * 5 : <li> | åˆ—è¡¨ ä½¿ç”¨ <ul> å’Œ <ol> è¿›è¡ŒåŒ…è£¹ï¼Œæœ€åå°†æ•´ä¸ªå†…å®¹ä½¿ç”¨ <li>
+// è¿›è¡ŒåŒ…è£…ã€‚
+// * 6 : <em> | æ–œä½“
+// * 7 : <strong> | åŠ ç²—
+// * 8 : <hr / > | æ°´å¹³åˆ†å‰²çº¿
+// * 9 : <br / > | æ¢è¡Œ
+// * 10 : <img alt = "" src = "" / > | å›¾ç‰‡
+// * 11 : <blockquote> | å¼•ç”¨
 // * 12 : <h1> | h1
 // * 13 : <h2> | h2
 // * 14 : <h3> | h3
 // * 15 : <h4> | h4
 // * 16 : <h5> | h5
 // * 17 : <h6> | h6
-// * 18 : <pre><code> | ´úÂë¶Î
-// * 19 : <code> | ĞĞÄÚ´úÂë
-//´Ê·¨¹Ø¼ü´ÊÃ¶¾Ù
-enum Token
-{
-	nul       = 0,
-	paragraph = 1,
-	href	  = 2,
-	ul		  = 3,
-	ol		  = 4,
-	li		  = 5,
-	em		  = 6,
-	strong	  = 7,
-	hr		  = 8,
-	br		  = 9,
-	image	  = 10,
-	quote	  = 11,
-	h1		  = 12,
-	h2		  = 13,
-	h3	      = 14,
-	h4		  = 15,
-	h5		  = 16,
-	h6		  = 17,
-	blockcode = 18,
-	code	  = 19,
+// * 18 : <pre><code> | ä»£ç æ®µ
+// * 19 : <code> | è¡Œå†…ä»£ç 
+//è¯æ³•å…³é”®è¯æšä¸¾
+enum Token {
+    nul = 0,
+    paragraph = 1,
+    href = 2,
+    ul = 3,
+    ol = 4,
+    li = 5,
+    em = 6,
+    strong = 7,
+    hr = 8,
+    br = 9,
+    image = 10,
+    quote = 11,
+    h1 = 12,
+    h2 = 13,
+    h3 = 14,
+    h4 = 15,
+    h5 = 16,
+    h6 = 17,
+    blockcode = 18,
+    code = 19,
 };
 
-//HTMLÇ°ÖÃ±êÇ©
+// HTMLå‰ç½®æ ‡ç­¾
 const std::string frontTag[] = {
-	"","<p>","","<ul>","<ol>","<li>","<em>","<strong>",
-	"<hr color=#CCCCCC size=1 />","<br />",
-	"","<blockquote>",
-	"<h1 ","<h2 ","<h3 ","<h4 ","<h5 ","<h6 ", // ÓÒ±ßµÄ¼âÀ¨ºÅÔ¤Áô¸øÌí¼ÓÆäËûµÄ±êÇ©ÊôĞÔ, Èç id
-	"<pre><code>","<code>"
-};
-// HTML ºóÖÃ±êÇ©
+    "",
+    "<p>",
+    "",
+    "<ul>",
+    "<ol>",
+    "<li>",
+    "<em>",
+    "<strong>",
+    "<hr color=#CCCCCC size=1 />",
+    "<br />",
+    "",
+    "<blockquote>",
+    "<h1 ",
+    "<h2 ",
+    "<h3 ",
+    "<h4 ",
+    "<h5 ",
+    "<h6 ",  // å³è¾¹çš„å°–æ‹¬å·é¢„ç•™ç»™æ·»åŠ å…¶ä»–çš„æ ‡ç­¾å±æ€§, å¦‚ id
+    "<pre><code>",
+    "<code>"};
+// HTML åç½®æ ‡ç­¾
 const std::string backTag[] = {
-	"","</p>","","</ul>","</ol>","</li>","</em>","</strong>",
-	"","","","</blockquote>",
-	"</h1>","</h2>","</h3>","</h4>","</h5>","</h6>",
-	"</code></pre>","</code>"
-};
+    "",          "</p>",  "",      "</ul>", "</ol>",         "</li>",  "</em>",
+    "</strong>", "",      "",      "",      "</blockquote>", "</h1>",  "</h2>",
+    "</h3>",     "</h4>", "</h5>", "</h6>", "</code></pre>", "</code>"};
 
-//±£´æÄ¿Â¼½á¹¹
+//ä¿å­˜ç›®å½•ç»“æ„
 struct Cnode {
-	vector<Cnode*> ch;
-	string heading;
-	string tag;
+    vector<Cnode *> ch;
+    string heading;
+    string tag;
 
-	Cnode(const string &hd) :heading(hd) {}
+    Cnode(const string &hd) : heading(hd) {}
 };
 
-//±£´æÕıÎÄÄÚÈİ
+//ä¿å­˜æ­£æ–‡å†…å®¹
 struct node {
-	//½ÚµãÀàĞÍ
-	int type;
+    //èŠ‚ç‚¹ç±»å‹
+    int type;
 
-	vector<node*> ch;
+    vector<node *> ch;
 
-	//´æÈı¸öÖØÒªÊôĞÔ£¬elem[0]±£´æÏÔÊ¾ÄÚÈİ¡¢elem[1]±£´æÁ´½Ó¡¢elem[2]±£´ætitle
-	string elem[3];
+    //å­˜ä¸‰ä¸ªé‡è¦å±æ€§ï¼Œelem[0]ä¿å­˜æ˜¾ç¤ºå†…å®¹ã€elem[1]ä¿å­˜é“¾æ¥ã€elem[2]ä¿å­˜title
+    string elem[3];
 
-	node(int _type) :type(_type) {}
+    node(int _type) : type(_type) {}
 };
 
 class MarkdownTransform {
-private:
-	//ÕıÎÄÄÚÈİ
-	string contents;
-	//Ä¿Â¼
-	string TOC;
-	
-	node *root, *now;
-	Cnode *Croot;
+   private:
+    //æ­£æ–‡å†…å®¹
+    string contents;
+    //ç›®å½•
+    string TOC;
 
-	//ÈÃÄ¿Â¼ÄÜ¹»ÕıÈ·µÄË÷Òıµ½ HTML µÄÄÚÈİÎ»ÖÃ£¬ cntTag µÄ½øĞĞ¼ÇÂ¼
-	int cntTag = 0;
-	char s[maxLength];//¶ÁÈ¡Ò»ĞĞÄÚÈİbuf
+    node *root, *now;
+    Cnode *Croot;
 
-public:
+    //è®©ç›®å½•èƒ½å¤Ÿæ­£ç¡®çš„ç´¢å¼•åˆ° HTML çš„å†…å®¹ä½ç½®ï¼Œ cntTag çš„è¿›è¡Œè®°å½•
+    int cntTag = 0;
+    char s[maxLength];  //è¯»å–ä¸€è¡Œå†…å®¹buf
 
-	//************************************
-	// Method:    start
-	// FullName:  MarkdownTransform::start
-	// Access:    public 
-	// Returns:   std::pair<int, char*> ÓÉ¿Õ¸ñÊıºÍÓĞÄÚÈİ´¦µÄ char* Ö¸Õë×é³ÉµÄ std::pair
-	// Qualifier:
-	// Parameter: char * src Ô´´®
-	// details :  ½âÎöÒ»ĞĞÖĞ¿ªÊ¼´¦µÄ¿Õ¸ñºÍTab
-	//************************************
-	pair<int, char*> start(char *src) {
-		//Èç¹ûĞĞ¿Õ£¬Ôò·µ»Ø
-		if (!strlen(src)){
-			return make_pair(0, nullptr);
-		}
+   public:
+    //************************************
+    //ç±»å‹è·å–
+    //************************************
+    // åˆ¤æ–­æ˜¯å¦ä¸ºæ ‡é¢˜
+    bool isHeading(node *v) { return (v->type >= h1 && v->type <= h6); }
+    // åˆ¤æ–­æ˜¯å¦ä¸ºå›¾ç‰‡
+    bool isImage(node *v) { return (v->type == image); }
+    //åˆ¤æ–­ä¸ºè¶…é“¾æ¥
+    bool isHref(node *v) { return (v->type == href); }
 
-		//ĞĞÇ°ÓĞ¿Õ¸ñºÍTab
-		//Í³¼Æ¿Õ¸ñÊıºÍTabÊı
-		int cntspace = 0;
-		int cnttab = 0;
-		//´Ó¸ÃĞĞµÄµÚÒ»¸ö×Ö·û¶ÁÆä, Í³¼Æ¿Õ¸ñ¼üºÍ Tab ¼ü,
-		// µ±Óöµ½²»ÊÇ¿Õ¸ñºÍ Tab Ê±£¬Á¢¼´Í£Ö¹
-		for (int i = 0; src[i] != '\0';i++) {
-			if (src[i]==' '){
-				cntspace++;
-			}else if (src[i]=='\t'){
-				cnttab++;
-			}
-			// Èç¹ûÄÚÈİÇ°ÓĞ¿Õ¸ñºÍ Tab£¬ÄÇÃ´½«ÆäÍ³Ò»°´ Tab µÄ¸öÊı´¦Àí,
-			// ÆäÖĞ, Ò»¸ö Tab = ËÄ¸ö¿Õ¸ñ
-			else return make_pair(cnttab + cnttab / 4, src + i);
-		
-		}
-		//ĞĞÇ°ÎŞ¿Õ¸ñºÍTab
-		return make_pair(0, src);
-	}
+    //************************************
+    // Method:    start
+    // FullName:  MarkdownTransform::start
+    // Access:    public
+    // Returns:   std::pair<int, char*> ç”±ç©ºæ ¼æ•°å’Œæœ‰å†…å®¹å¤„çš„ char* æŒ‡é’ˆç»„æˆçš„
+    // std::pair Qualifier: Parameter: char * src æºä¸² details :
+    // è§£æä¸€è¡Œä¸­å¼€å§‹å¤„çš„ç©ºæ ¼å’ŒTab
+    //************************************
+    pair<int, char *> start(char *src) {
+        //å¦‚æœè¡Œç©ºï¼Œåˆ™è¿”å›
+        if ((int)strlen(src) == 0) {
+            return make_pair(0, nullptr);
+        }
 
+        //è¡Œå‰æœ‰ç©ºæ ¼å’ŒTab
+        //ç»Ÿè®¡ç©ºæ ¼æ•°å’ŒTabæ•°
+        int cntspace = 0;
+        int cnttab = 0;
+        //ä»è¯¥è¡Œçš„ç¬¬ä¸€ä¸ªå­—ç¬¦è¯»å…¶, ç»Ÿè®¡ç©ºæ ¼é”®å’Œ Tab é”®,
+        // å½“é‡åˆ°ä¸æ˜¯ç©ºæ ¼å’Œ Tab æ—¶ï¼Œç«‹å³åœæ­¢
+        for (int i = 0; src[i] != '\0'; i++) {
+            if (src[i] == ' ') {
+                cntspace++;
+            } else if (src[i] == '\t') {
+                cnttab++;
+            }
+            // å¦‚æœå†…å®¹å‰æœ‰ç©ºæ ¼å’Œ Tabï¼Œé‚£ä¹ˆå°†å…¶ç»Ÿä¸€æŒ‰ Tab çš„ä¸ªæ•°å¤„ç†,
+            // å…¶ä¸­, ä¸€ä¸ª Tab = å››ä¸ªç©ºæ ¼
+            return make_pair(cnttab + cnttab / 4, src + i);
+        }
+        //è¡Œå‰æ— ç©ºæ ¼å’ŒTab
+        return make_pair(0, nullptr);
+    }
 
-	//************************************
-	// Method:    JudgeType
-	// FullName:  MarkdownTransform::JudgeType
-	// Access:    public 
-	// Returns:   std::pair<int, char*> µ±Ç°ĞĞµÄÀàĞÍºÍ³ıÈ¥ĞĞ±êÖ¾ĞÔ¹Ø¼ü×ÖµÄÕıÊÇÄÚÈİµÄ char* Ö¸Õë×é³ÉµÄ std::pair
-	// Qualifier:
-	// Parameter: char * src Ô´´®
-	// details :  ÅĞ¶Ïµ±Ç°ĞĞÀàĞÍ£¬MDÓï·¨¹Ø¼ü×ÖÎ»ÓÚĞĞÊ×
-	//************************************
-	pair<int, char*> JudgeType(char *src) {
-		char *ptr = src;
+    //************************************
+    // Method:    JudgeType
+    // FullName:  MarkdownTransform::JudgeType
+    // Access:    public
+    // Returns:   std::pair<int, char*>
+    // å½“å‰è¡Œçš„ç±»å‹å’Œé™¤å»è¡Œæ ‡å¿—æ€§å…³é”®å­—çš„æ­£æ˜¯å†…å®¹çš„ char* æŒ‡é’ˆç»„æˆçš„ std::pair
+    // Qualifier:
+    // Parameter: char * src æºä¸²
+    // details :  åˆ¤æ–­å½“å‰è¡Œç±»å‹ï¼ŒMDè¯­æ³•å…³é”®å­—ä½äºè¡Œé¦–
+    //************************************
+    pair<int, char *> JudgeType(char *src) {
+        char *ptr = src;
 
-		//Ìø¹ı'#'
-		while (*ptr=='#'){
-			ptr++;
-		}
+        //è·³è¿‡'#'
+        while (*ptr == '#') {
+            ptr++;
+        }
 
-		//½Ó×Å³öÏÖ¿Õ¸ñ£¬ÔòÊÇ'<h>'±êÇ©
-		if (ptr - src > 0 && *ptr == ' ') {
-			return make_pair(ptr - src + h1 - 1, ptr + 1);//ÀÛ¼ÓÅĞ¶Ï¼¸¼¶±êÌâ
-		}
+        //æ¥ç€å‡ºç°ç©ºæ ¼ï¼Œåˆ™æ˜¯'<h>'æ ‡ç­¾
+        if (ptr - src > 0 && *ptr == ' ') {
+            return make_pair(ptr - src + h1 - 1, ptr + 1);  //ç´¯åŠ åˆ¤æ–­å‡ çº§æ ‡é¢˜
+        }
 
-		//ÖØÖÃ·ÖÎöÎ»ÖÃ
-		ptr = src;
+        //é‡ç½®åˆ†æä½ç½®
+        ptr = src;
 
-		//³öÏÖ ```ÔòÊÇ´úÂë¿é
-		if (!strncmp(ptr, "```", 3)) {
-			return make_pair(blockcode, ptr + 3);
-		}
+        //å‡ºç° ```åˆ™æ˜¯ä»£ç å—
+        if (strncmp(ptr, "```", 3) == 0) {
+            return make_pair(blockcode, ptr + 3);
+        }
 
-		//Èç¹û³öÏÖ (* +) -, ²¢ÇÒËûÃÇµÄÏÂÒ»¸ö×Ö·ûÎª¿Õ¸ñ£¬ÔòËµÃ÷ÊÇÎŞĞòÁĞ±í
-		if (!strncmp(ptr, "- ", 2)) {
-			return make_pair(ul, ptr + 1);
-		}
-		// Èç¹û³öÏÖµÄÊÇÊı×Ö, ÇÒÏÂÒ»¸ö×Ö·ûÊÇ '.',ÏÂÏÂ¸ö¿Õ¸ñ£¬ÔòËµÃ÷ÊÇÊÇÓĞĞòÁĞ±í
-		char *ptr1 = ptr;
-		while (*ptr1 && (isdigit(*ptr1))) {
-			ptr1++;
-		}
-		if (ptr1 != ptr && *ptr1 == '.'&&ptr1[1] == ' ') {
-			return make_pair(ol, ptr1 + 1);
-		}
+        //å¦‚æœå‡ºç° (* +) -, å¹¶ä¸”ä»–ä»¬çš„ä¸‹ä¸€ä¸ªå­—ç¬¦ä¸ºç©ºæ ¼ï¼Œåˆ™è¯´æ˜æ˜¯æ— åºåˆ—è¡¨
+        if (strncmp(ptr, "- ", 2) == 0) {
+            return make_pair(ul, ptr + 1);
+        }
 
-		//Èç¹û³öÏÖ > ÇÒÏÂÒ»¸ö×Ö·ûÎª¿Õ¸ñ£¬ÔòËµÃ÷ÊÇÒıÓÃ
-		if (!strncmp(ptr, ">  ", 2)) {
-			return make_pair(quote, ptr + 1);
-		}
+        //å¦‚æœå‡ºç° > ä¸”ä¸‹ä¸€ä¸ªå­—ç¬¦ä¸ºç©ºæ ¼ï¼Œåˆ™è¯´æ˜æ˜¯å¼•ç”¨
+        if (*ptr == '>' && (ptr[1] == ' ')) {
+            return make_pair(quote, ptr + 1);
+        }
 
-		//·ñÔò¾ÍÊÇÆÕÍ¨¶ÎÂä
-		return make_pair(paragraph, ptr);
-	}
-	
-	//************************************
-	//ÀàĞÍ»ñÈ¡
-	//************************************
-	// ÅĞ¶ÏÊÇ·ñÎª±êÌâ
-	bool isHeading(node *v) {
-		return (v->type >= h1 && v->type <= h6);
-	}
-	// ÅĞ¶ÏÊÇ·ñÎªÍ¼Æ¬
-	bool isImage(node *v) {
-		return (v->type == image);
-	}
-	//ÅĞ¶ÏÎª³¬Á´½Ó
-	bool isHref(node *v) {
-		return (v->type == href);
-	}
+        // å¦‚æœå‡ºç°çš„æ˜¯æ•°å­—, ä¸”ä¸‹ä¸€ä¸ªå­—ç¬¦æ˜¯ '.',ä¸‹ä¸‹ä¸ªç©ºæ ¼ï¼Œåˆ™è¯´æ˜æ˜¯æ˜¯æœ‰åºåˆ—è¡¨
+        char *ptr1 = ptr;
+        while (*ptr1 && (isdigit((unsigned char)*ptr1))) {
+            ptr1++;
+        }
+        if (ptr1 != ptr && *ptr1 == '.' && ptr1[1] == ' ') {
+            return make_pair(ol, ptr1 + 1);
+        }
+        //å¦åˆ™å°±æ˜¯æ™®é€šæ®µè½
+        return make_pair(paragraph, ptr);
+    }
 
+    //************************************
+    // æ ‘æ“ä½œ
+    //************************************
+    //************************************//************************************//************************************
+    //************************************
+    // Method:    findnode
+    // FullName:  MarkdownTransform::findnode
+    // Access:    public
+    // Returns:   node* æ‰¾åˆ°çš„èŠ‚ç‚¹æŒ‡é’ˆ
+    // Qualifier:
+    // Parameter: int depth æ·±åº¦
+    // details :  ç»™å®šæ ‘çš„æ·±åº¦å¯»æ‰¾èŠ‚ç‚¹
+    //************************************
+    node *findnode(int depth) {
+        node *ptr = root;
+        while (!ptr->ch.empty() && depth != 0) {
+            ptr = ptr->ch.back();  //æœ€åä¸€ä¸ªå…ƒç´ 
+            if (ptr->type == li) {
+                depth--;
+            }
+        }
+        return ptr;
+    }
 
-	//************************************
-	// Ê÷²Ù×÷
-	//************************************
-	//************************************//************************************//************************************
-	//************************************
-	// Method:    findnode
-	// FullName:  MarkdownTransform::findnode
-	// Access:    public 
-	// Returns:   node* ÕÒµ½µÄ½ÚµãÖ¸Õë
-	// Qualifier:
-	// Parameter: int depth Éî¶È
-	// details :  ¸ø¶¨Ê÷µÄÉî¶ÈÑ°ÕÒ½Úµã
-	//************************************
-	node* findnode(int depth) {
-		node *ptr = root;
-		while (!ptr->ch.empty() && depth) {
-			ptr = ptr->ch.back();//×îºóÒ»¸öÔªËØ
-			if (ptr->type == li) {
-				depth--;
-			}
-		}
-		return ptr;
-	}
+    //************************************//************************************//************************************
 
-	//************************************//************************************//************************************
+    //************************************
+    // Method:    Cins
+    // FullName:  MarkdownTransform::Cins
+    // Access:    public
+    // Returns:   void
+    // Qualifier:
+    // Parameter: Cnode * v
+    // Parameter: int x ç›®å½•çº§åˆ«åºå·
+    // Parameter: const string & hd
+    // Parameter: int tag  tagåºå· æ ‡ç­¾æ¥æ ‡è®°è¿™ä¸ªç›®å½•æ‰€æŒ‡å‘çš„å†…å®¹
+    // details :  é€’å½’CnodeèŠ‚ç‚¹æ’å…¥
+    //************************************
+    void Cins(Cnode *v, int x, const string &hd, int tag) {
+        int n = (int)v->ch.size();
+        if (x == 1) {
+            v->ch.push_back(new Cnode(hd));
+            v->ch.back()->tag = "tag" + to_string(tag);
+            return;
+        }
+        if (!n || v->ch.back()->heading.empty()) {
+            v->ch.push_back(new Cnode(""));
+        }
+        Cins(v->ch.back(), x - 1, hd, tag);
+    }
 
-	//************************************
-	// Method:    Cins
-	// FullName:  MarkdownTransform::Cins
-	// Access:    public 
-	// Returns:   void
-	// Qualifier:
-	// Parameter: Cnode * v
-	// Parameter: int x Ä¿Â¼¼¶±ğĞòºÅ
-	// Parameter: const string & hd
-	// Parameter: int tag  tagĞòºÅ ±êÇ©À´±ê¼ÇÕâ¸öÄ¿Â¼ËùÖ¸ÏòµÄÄÚÈİ
-	// details :  µİ¹éCnode½Úµã²åÈë
-	//************************************
-	void Cins(Cnode *v, int x, const string &hd, int tag) {
-		int n = v->ch.size();
-		if (x == 1) {
-			v->ch.push_back(new Cnode(hd));
-			v->ch.back()->tag = "tag" + to_string(tag);
-			return;
-		}
-		if (!n || v->ch.back()->heading.empty()) {
-			v->ch.push_back(new Cnode(""));
-		}
-		Cins(v->ch.back(), x - 1, hd, tag);
-	}
+    //************************************
+    // Method:    insert
+    // FullName:  MarkdownTransform::insert
+    // Access:    public
+    // Returns:   void
+    // Qualifier:
+    // Parameter: node * v æŒ‡å®šèŠ‚ç‚¹
+    // Parameter: const string & src
+    // details :  å‘æŒ‡å®šçš„nodeèŠ‚ç‚¹ä¸­æ’å…¥è¦å¤„ç†çš„ä¸²
+    //************************************
+    void insert(node *v, const string &src) {
+        int n = (int)src.size();
+        bool incode = false, inem = false, instrong = false, inautolink = false;
+        v->ch.push_back(new node(nul));
 
-	//************************************
-	// Method:    insert
-	// FullName:  MarkdownTransform::insert
-	// Access:    public 
-	// Returns:   void
-	// Qualifier:
-	// Parameter: node * v Ö¸¶¨½Úµã
-	// Parameter: const string & src
-	// details :  ÏòÖ¸¶¨µÄnode½ÚµãÖĞ²åÈëÒª´¦ÀíµÄ´®
-	//************************************
-	void insert(node *v, const string &src) {
-		int n = src.size();
-		bool incode = false, 
-			inem = false, 
-			instrong = false, 
-			inautolink = false;
-		v->ch.push_back(new node(nul));
+        for (int i = 0; i < n; i++) {
+            char ch = src[i];
+            if (ch == '\\') {
+                ch = src[++i];
+                v->ch.back()->elem[0] += string(1, ch);  //ä¿å­˜å†…å®¹
+                continue;
+            }
 
-		for (int i = 0; i < n; i++) {
-			char ch = src[i];
-			if (ch == '\\') {
-				ch = src[++i];
-				v->ch.back()->elem[0] += string(1, ch);//±£´æÄÚÈİ
-				continue;
-			}
+            //å¤„ç†è¡Œå†…ä»£ç  `code`
+            if (ch == '`' && !inautolink) {
+                incode ? v->ch.push_back(new node(nul))
+                       : v->ch.push_back(new node(code));
+                incode = !incode;
+                continue;
+            }
 
-			//´¦ÀíĞĞÄÚ´úÂë `code`
-			if (ch == '`' && !inautolink) {
-				incode ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(code));
-				incode = !incode;
-				continue;
-			}
+            //å¤„ç†åŠ ç²— **åŠ ç²—**
+            if (ch == '*' && (i < n - 1 && (src[i + 1] == '*')) && !incode &&
+                !inautolink) {
+                ++i;
+                instrong ? v->ch.push_back(new node(nul))
+                         : v->ch.push_back(new node(strong));
+                instrong = !instrong;
+                continue;
+            }
 
-			//´¦Àí¼Ó´Ö **¼Ó´Ö**
-			if (ch == '*' && (i < n - 1 && (src[i + 1] == '*')) && !incode && !inautolink) {
-				++i;
-				instrong ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(strong));
-				instrong = !instrong;
-				continue;
-			}
+            //å¤„ç†æ–œä½“ _æ–œä½“_
+            if (ch == '_' && !incode && !inautolink && !instrong) {
+                inem ? v->ch.push_back(new node(nul))
+                     : v->ch.push_back(new node(em));
+                inem = !inem;
+                continue;
+            }
 
-			//´¦ÀíĞ±Ìå _Ğ±Ìå_
-			if (ch == '_' && !incode && !inautolink && !instrong) {
-				inem ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(em));
-				inem = !inem;
-				continue;
-			}
+            //å¤„ç†å›¾ç‰‡ ![image](https://web/image.png)
+            //![image](https://web/image.png "title")
+            if (ch == '!' && (i < n - 1 && src[i + 1] == '[') && !incode &&
+                !instrong && !inem && !inautolink) {
+                //è·å–å›¾ç‰‡æ˜¾ç¤ºå†…å®¹
+                v->ch.push_back(new node(image));
+                for (i += 2; i < n - 1 && src[i] != ']'; i++) {
+                    v->ch.back()->elem[0] += string(1, src[i]);
+                }
+                i++;
+                //è·å–å›¾ç‰‡é“¾æ¥
+                for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
+                    v->ch.back()->elem[1] += string(1, src[i]);
+                }
+                //è·å–title
+                if (src[i] != ')') {
+                    for (i++; i < n - 1 && src[i] != ')'; i++) {
+                        if (src[i] != '"') {
+                            v->ch.back()->elem[2] += string(1, src[i]);
+                        }
+                    }
+                }
+                v->ch.push_back(new node(nul));
+                continue;
+            }
 
-			//´¦ÀíÍ¼Æ¬ ![image](https://web/image.png) ![image](https://web/image.png "title")
-			if (ch == '!' && (i < n - 1 && src[i + 1] == '[') && !incode && !instrong && !inem && !inautolink) {
-				//»ñÈ¡Í¼Æ¬ÏÔÊ¾ÄÚÈİ
-				for (i += 2; i < n - 1 && src[i] != ']'; i++) {
-					v->ch.back()->elem[0] += string(1, src[i]);
-				}
-				i++;
-				//»ñÈ¡Í¼Æ¬Á´½Ó
-				for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
-					v->ch.back()->elem[1] += string(1, src[i]);
-				}
-				//»ñÈ¡title
-				if (src[i] != ')') {
-					for (i++; i < n - 1 && src[i] != ')'; i++) {
-						if (src[i] == '"') {
-							v->ch.back()->elem[2] += string(1, src[i]);
-						}
-					}
-				}
-				v->ch.push_back(new node(nul));
-				continue;
-			}
+            //å¤„ç†è¶…é“¾æ¥  [github](https://github.com/)
+            //[github](https://github.com/ "title")
+            if (ch == '[' && !incode && !instrong && !inem && !inautolink) {
+                //è·å–é“¾æ¥æ˜¾ç¤ºå†…å®¹
+                v->ch.push_back(new node(href));
+                for (i++; i < n - 1 && src[i] != ']'; i++) {
+                    v->ch.back()->elem[0] += string(1, src[i]);
+                }
+                i++;
+                //è·å–é“¾æ¥
+                for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
+                    v->ch.back()->elem[1] += string(1, src[i]);
+                }
+                //è·å–title
+                if (src[i] != ')') {
+                    for (i++; i < n - 1 && src[i] != ')'; i++) {
+                        if (src[i] != '"') {
+                            v->ch.back()->elem[2] += string(1, src[i]);
+                        }
+                    }
+                }
+                v->ch.push_back(new node(nul));
+                continue;
+            }
 
-			//´¦Àí³¬Á´½Ó  [github](https://github.com/) [github](https://github.com/ "title")
-			if (ch == '[' && !incode && !instrong && !inem && !inautolink) {
-				//»ñÈ¡Á´½ÓÏÔÊ¾ÄÚÈİ
-				for (i++; i < n - 1 && src[i] != ']'; i++) {
-					v->ch.back()->elem[0] += string(1, src[i]);
-				}
-				i++;
-				//»ñÈ¡Á´½Ó
-				for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
-					v->ch.back()->elem[1] += string(1, src[i]);
-				}
-				//»ñÈ¡title
-				if (src[i] != ')') {
-					for (i++; i < n - 1 && src[i] != ')'; i++) {
-						if (src[i] == '"') {
-							v->ch.back()->elem[2] += string(1, src[i]);
-						}
-					}
-				}
-				v->ch.push_back(new node(nul));
-				continue;
-			}
+            //æ™®é€šæ–‡æœ¬
+            v->ch.back()->elem[0] += string(1, ch);
+            if (!inautolink) {
+                v->ch.back()->elem[1] += string(1, ch);
+            }
+        }
 
-			//ÆÕÍ¨ÎÄ±¾
-			v->ch.back()->elem[0] += string(1, ch);
-			if (!inautolink) {
-				v->ch.back()->elem[1] += string(1, ch);
-			}
-		}
+        //ç»“å°¾ä¸¤ä¸ªç©ºæ ¼ï¼Œæ¢è¡Œ
+        if (src.size() >= 2) {
+            if (src.at(src.size() - 1) == ' ' &&
+                src.at(src.size() - 2) == ' ') {
+                v->ch.push_back(new node(br));
+            }
+        }
+    }
 
-		//½áÎ²Á½¸ö¿Õ¸ñ£¬»»ĞĞ
-		if (src.size() >= 2) {
-			if (src.at(src.size() - 1) == ' '&&src.at(src.size() - 2) == ' ') {
-				v->ch.push_back(new node(br));
-			}
-		}
-	}
+    //************************************
+    // Method:    isCutline
+    // FullName:  MarkdownTransform::isCutline
+    // Access:    public
+    // Returns:   bool
+    // Qualifier:
+    // Parameter: char * src
+    // details :  åˆ¤æ–­æ˜¯å¦æ¢è¡Œ,Markdown æ”¯æŒä½¿ç”¨ ---è¿›è¡Œäººä¸ºåˆ†å‰²
+    //************************************
+    bool isCutline(char *src) {
+        int cnt = 0;
+        char *ptr = src;
+        while (*ptr) {
+            // å¦‚æœä¸æ˜¯ ç©ºæ ¼ã€tabã€- æˆ– *ï¼Œé‚£ä¹ˆåˆ™ä¸éœ€è¦æ¢è¡Œ
+            if (*ptr != ' ' && *ptr != '\t' && *ptr != '-') {
+                return false;
+            }
+            if (*ptr == '-') {
+                cnt++;
+            }
+            ptr++;
+        }
+        // å¦‚æœå‡ºç° --- åˆ™éœ€è¦å¢åŠ ä¸€ä¸ªåˆ†å‰²çº¿, è¿™æ—¶éœ€è¦æ¢è¡Œ
+        return (cnt >= 3);
+    }
 
-	//************************************
-	// Method:    isCutline
-	// FullName:  MarkdownTransform::isCutline
-	// Access:    public 
-	// Returns:   bool
-	// Qualifier:
-	// Parameter: char * src
-	// details :  ÅĞ¶ÏÊÇ·ñ»»ĞĞ,Markdown Ö§³ÖÊ¹ÓÃ ---½øĞĞÈËÎª·Ö¸î
-	//************************************
-	bool isCutline(char *src) {
-		int cnt = 0;
-		char *ptr = src;
-		while (*ptr) {
-			// Èç¹û²»ÊÇ ¿Õ¸ñ¡¢tab¡¢- »ò *£¬ÄÇÃ´Ôò²»ĞèÒª»»ĞĞ
-			if (*ptr != ' '&&*ptr != '\t'&&*ptr != '-') {
-				return false;
-			}
-			if (*ptr == '-'){
-				cnt++;
-			}
-			ptr++;
-		}
-		// Èç¹û³öÏÖ --- ÔòĞèÒªÔö¼ÓÒ»¸ö·Ö¸îÏß, ÕâÊ±ĞèÒª»»ĞĞ
-		return (cnt >= 3);
-	}
+    //************************************
+    // Method:    mkpara
+    // FullName:  MarkdownTransform::mkpara
+    // Access:    public
+    // Returns:   void
+    // Qualifier:
+    // Parameter: node * v
+    // details :  æ‹¿åˆ°ä¸€ä¸ªæ®µè½æ–‡æœ¬
+    //************************************
+    void mkpara(node *v) {
+        if (v->ch.size() == 1u &&
+            v->ch.back()->type == paragraph) {  // 1u 1 unsigned int
+            return;
+        }
+        if (v->type == paragraph) {
+            return;
+        }
+        if (v->type == nul) {
+            v->type = paragraph;
+            return;
+        }
+        node *x = new node(paragraph);
+        x->ch = v->ch;
+        v->ch.clear();
+        v->ch.push_back(x);
+    }
 
-	//************************************
-	// Method:    mkpara
-	// FullName:  MarkdownTransform::mkpara
-	// Access:    public 
-	// Returns:   void
-	// Qualifier:
-	// Parameter: node * v
-	// details :  ÄÃµ½Ò»¸ö¶ÎÂäÎÄ±¾
-	//************************************
-	void mkpara(node *v) {
-		if (v->ch.size() == 1u && v->ch.back()->type == paragraph) { //1u 1 unsigned int
-			return;
-		}
-		if (v->type == paragraph) {
-			return;
-		}
-		if (v->type == nul) {
-			v->type = paragraph;
-			return;
-		}
-		node *x = new node(paragraph);
-		x->ch = v->ch;
-		v->ch.clear();
-		v->ch.push_back(x);
-	}
+    //éå†ä¸ç”Ÿæˆ
+    //è¯­æ³•æ ‘çš„éå†æ˜¯éœ€è¦æ·±åº¦ä¼˜å…ˆçš„ï¼Œè€Œå¯¹ç›®å½•çš„æ·±åº¦éå†å’Œæ­£æ–‡å†…å®¹çš„æ·±åº¦éå†é€»è¾‘å¹¶ä¸ä¸€æ ·
 
-	//±éÀúÓëÉú³É
-	//Óï·¨Ê÷µÄ±éÀúÊÇĞèÒªÉî¶ÈÓÅÏÈµÄ£¬¶ø¶ÔÄ¿Â¼µÄÉî¶È±éÀúºÍÕıÎÄÄÚÈİµÄÉî¶È±éÀúÂß¼­²¢²»Ò»Ñù
+    //************************************
+    // Method:    dfs
+    // FullName:  MarkdownTransform::dfs
+    // Access:    public
+    // Returns:   void
+    // Qualifier:
+    // Parameter: node * v
+    // details :  æ·±åº¦ä¼˜å…ˆéå†æ­£æ–‡
+    //************************************
+    void dfs(node *v) {
+        if (v->type == paragraph && v->elem[0].empty() && v->ch.empty()) {
+            return;
+        }
 
-	//************************************
-	// Method:    dfs
-	// FullName:  MarkdownTransform::dfs
-	// Access:    public 
-	// Returns:   void
-	// Qualifier:
-	// Parameter: node * v
-	// details :  Éî¶ÈÓÅÏÈ±éÀúÕıÎÄ
-	//************************************
-	void dfs(node *v) {
-		if (v->type == paragraph && v->elem[0].empty() && v->ch.empty()) {
-			return;
-		}
+        contents += frontTag[v->type];
+        bool flag = true;
 
-		contents += frontTag[v->type];
-		bool flag = true;
+        //å¤„ç†æ ‡é¢˜ï¼Œæ”¯æŒç›®å½•è¿›è¡Œè·³è½¬
+        if (isHeading(v)) {
+            contents += "id=\"" + v->elem[0] + "\">";
+            flag = false;
+        }
 
-		//´¦Àí±êÌâ£¬Ö§³ÖÄ¿Â¼½øĞĞÌø×ª
-		if (isHeading(v)) {
-			contents += "id=\"" + v->elem[0] + "\">";
-			flag = false;
-		}
+        //å¤„ç†è¶…é“¾æ¥
+        if (isHref(v)) {
+            contents += "<a href=\"" + v->elem[1] + "\"title=\"" + v->elem[2] +
+                        "\">" + v->elem[0] + "</a>";
+            flag = false;
+        }
 
-		//´¦Àí³¬Á´½Ó
-		if (isHref(v)) {
-			contents += "<a href=\"" + v->elem[1] + "\"title=\"" + v->elem[2] + "\">" + v->elem[0] + "</a>";
-			flag = false;
-		}
+        //å¤„ç†å›¾ç‰‡
+        if (isImage(v)) {
+            contents += "<img alt=\"" + v->elem[0] + "\"src=\"" + v->elem[1] +
+                        "\"title=\"" + v->elem[2] + "\" />";
+            flag = false;
+        }
 
-		//´¦ÀíÍ¼Æ¬
-		if (isImage(v)) {
-			contents += "<img alt=\"" + v->elem[0] + "\"src=\"" + v->elem[1] + "\"title=\"" + v->elem[2] + "\"/>";
-			flag = false;
-		}
+        // å¦‚æœä¸Šé¢ä¸‰è€…éƒ½ä¸æ˜¯, åˆ™ç›´æ¥æ·»åŠ å†…å®¹
+        if (flag) {
+            contents += v->elem[0];
+            flag = false;
+        }
 
-		// Èç¹ûÉÏÃæÈıÕß¶¼²»ÊÇ, ÔòÖ±½ÓÌí¼ÓÄÚÈİ
-		if (flag){
-			contents += v->elem[0];
-			flag = false;
-		}
+        // é€’å½’éå†æ‰€æœ‰
+        for (int i = 0; i < (int)v->ch.size(); i++) {
+            dfs(v->ch[i]);
+        }
 
-		// µİ¹é±éÀúËùÓĞ
-		for (int i = 0; i < v->ch.size(); i++) {
-			dfs(v->ch[i]);
-		}
+        // æ‹¼æ¥ç»“æŸæ ‡ç­¾
+        contents += backTag[v->type];
+    }
 
-		// Æ´½Ó½áÊø±êÇ©
-		contents += backTag[v->type];
-	}
+    //ç›®å½•çš„éå†å’Œæ­£æ–‡å†…å®¹çš„éå†å·®åˆ«åœ¨äºï¼Œç›®å½•çš„å±•ç¤ºæ–¹å¼æ˜¯éœ€è¦ä½¿ç”¨æ— åºåˆ—è¡¨çš„å½¢å¼å±•ç¤ºåœ¨
+    // HTML ä¸­
+    //************************************
+    // Method:    Cdfs
+    // FullName:  MarkdownTransform::Cdfs
+    // Access:    public
+    // Returns:   void
+    // Qualifier:
+    // Parameter: Cnode * v
+    // Parameter: string index
+    // details :  éå†ç›®å½•
+    //************************************
+    void Cdfs(Cnode *v, string index) {
+        TOC += "<li>\n";
+        TOC += "<a href=\"#" + v->tag + "\">" + index + " " + v->heading +
+               "</a>\n";
+        int n = (int)v->ch.size();
+        if (n) {
+            TOC += "<ul>\n";
+            for (int i = 0; i < n; i++) {
+                Cdfs(v->ch[i], index + to_string(i + 1) + ".");
+            }
+            TOC += "</ul>\n";
+        }
+        TOC += "</li>\n";
+    }
 
-	//Ä¿Â¼µÄ±éÀúºÍÕıÎÄÄÚÈİµÄ±éÀú²î±ğÔÚÓÚ£¬Ä¿Â¼µÄÕ¹Ê¾·½Ê½ÊÇĞèÒªÊ¹ÓÃÎŞĞòÁĞ±íµÄĞÎÊ½Õ¹Ê¾ÔÚ HTML ÖĞ
-	//************************************
-	// Method:    Cdfs
-	// FullName:  MarkdownTransform::Cdfs
-	// Access:    public 
-	// Returns:   void
-	// Qualifier:
-	// Parameter: Cnode * v
-	// Parameter: string index
-	// details :  ±éÀúÄ¿Â¼
-	//************************************
-	void Cdfs(Cnode *v, string index) {
-		TOC += "<li>\n";
-		TOC += "<a href=\"#" + v->tag + "\">" + index + " " + v->heading + "</a>\n";
-		int n = v->ch.size();
-		if (n){
-			TOC += "<ul>\n";
-			for (int i = 0; i < n; i++) {
-				Cdfs(v->ch[i], index + to_string(i + 1) + ".");
-			}
-			TOC += "</ul>\n";
-		}
-		TOC += "</li>\n";
-	}
+    //************************************
+    // Method:    MarkdownTransform
+    // FullName:  MarkdownTransform::MarkdownTransform
+    // Access:    public
+    // Returns:
+    // Qualifier:
+    // Parameter: const std::string & filename
+    // details :  æ„é€ å‡½æ•°å¯¹æ–‡æ¡£æ ‘ç»“æ„å¤„ç†ï¼Œç”Ÿæˆå†…å®¹ä¸ç›®å½•
+    //************************************
+    MarkdownTransform(const std::string &filename) {
+        // é¦–å…ˆä¸ºæ–‡æ¡£çš„æ ‘ç»“æ„è¿›è¡Œåˆå§‹åŒ–ï¼Œå¹¶å°†å½“å‰æŒ‡é’ˆ now æŒ‡å‘æ ¹èŠ‚ç‚¹
+        Croot = new Cnode("");
+        root = new node(nul);
+        now = root;
 
-	//************************************
-	// Method:    MarkdownTransform
-	// FullName:  MarkdownTransform::MarkdownTransform
-	// Access:    public 
-	// Returns:   
-	// Qualifier:
-	// Parameter: const std::string & filename
-	// details :  ¹¹Ôìº¯Êı¶ÔÎÄµµÊ÷½á¹¹´¦Àí£¬Éú³ÉÄÚÈİÓëÄ¿Â¼
-	//************************************
-	MarkdownTransform(const std::string &filename) {
-		// Ê×ÏÈÎªÎÄµµµÄÊ÷½á¹¹½øĞĞ³õÊ¼»¯£¬²¢½«µ±Ç°Ö¸Õë now Ö¸Ïò¸ù½Úµã
-		Croot = new Cnode("");
-		root = new node(nul);
-		now = root;
+        //ä»æ–‡ä»¶æµä¸­è¯»å–æ–‡ä»¶
+        std::ifstream fin(filename);
 
-		//´ÓÎÄ¼şÁ÷ÖĞ¶ÁÈ¡ÎÄ¼ş
-		std::ifstream fin(filename);
+        //é»˜è®¤ä¸æ˜¯æ–°æ®µè½ï¼Œé»˜è®¤ä¸åœ¨ä»£ç å—å†…
+        bool newpara = false;
+        bool inblock = false;
 
-		//Ä¬ÈÏ²»ÊÇĞÂ¶ÎÂä£¬Ä¬ÈÏ²»ÔÚ´úÂë¿éÄÚ
-		bool newpara = false;
-		bool inblock = false;
+        //è¯»å–åˆ°eofä¸ºæ­¢
+        while (!fin.eof()) {
+            //ä»æ–‡ä»¶è¯»å–ä¸€è¡Œ
+            fin.getline(s, maxLength);
 
-		//¶ÁÈ¡µ½eofÎªÖ¹
-		while (!fin.eof()) {
-			//´ÓÎÄ¼ş¶ÁÈ¡Ò»ĞĞ
-			fin.getline(s, maxLength);
+            //å¤„ç†ä¸åœ¨ä»£ç å—ä¸”éœ€è¦æ¢è¡Œ
+            if (!inblock && isCutline(s)) {
+                now = root;
+                now->ch.push_back(new node(hr));
+                newpara = false;
+                continue;
+            }
 
-			//´¦Àí²»ÔÚ´úÂë¿éÇÒĞèÒª»»ĞĞ
-			if (!inblock&&isCutline(s)) {
-				now = root;
-				now->ch.push_back(new node(hr));
-				newpara = false;
-				continue;
-			}
-			
-			// std::pair ÊµÖÊÉÏÊÇÒ»¸ö½á¹¹Ìå, ¿ÉÒÔ½«Á½¸öÊı¾İ×éºÏ³ÉÒ»¸öÊı¾İ
-			// ¼ÆËãÒ»ĞĞÖĞ¿ªÊ¼µÄ¿Õ¸ñºÍ Tab Êı
-			// ÓÉ¿Õ¸ñÊıºÍÓĞÄÚÈİ´¦µÄ char* Ö¸Õë×é³ÉµÄ
-			auto ps = start(s);
+            // std::pair å®è´¨ä¸Šæ˜¯ä¸€ä¸ªç»“æ„ä½“, å¯ä»¥å°†ä¸¤ä¸ªæ•°æ®ç»„åˆæˆä¸€ä¸ªæ•°æ®
+            // è®¡ç®—ä¸€è¡Œä¸­å¼€å§‹çš„ç©ºæ ¼å’Œ Tab æ•°
+            // ç”±ç©ºæ ¼æ•°å’Œæœ‰å†…å®¹å¤„çš„ char* æŒ‡é’ˆç»„æˆçš„
+            auto ps = start(s);
 
-			// Èç¹ûÃ»ÓĞÎ»ÓÚ´úÂë¿éÖĞ, ÇÒÃ»ÓĞÍ³¼Æµ½¿Õ¸ñºÍ Tab, ÔòÖ±½Ó¶ÁÈ¡ÏÂÒ»ĞĞ
-			if (!inblock&&ps.second == nullptr) {
-				now = root;
-				newpara = true;
-				continue;
-			}
+            // å¦‚æœæ²¡æœ‰ä½äºä»£ç å—ä¸­, ä¸”æ²¡æœ‰ç»Ÿè®¡åˆ°ç©ºæ ¼å’Œ Tab, åˆ™ç›´æ¥è¯»å–ä¸‹ä¸€è¡Œ
+            if (!inblock && ps.second == nullptr) {
+                now = root;
+                newpara = true;
+                continue;
+            }
 
-			// ·ÖÎö¸ÃĞĞÎÄ±¾µÄÀàĞÍ
-			// µ±Ç°ĞĞµÄÀàĞÍºÍ³ıÈ¥ĞĞ±êÖ¾ĞÔ¹Ø¼ü×ÖµÄÕıÎÄÄÚÈİµÄ char* µÄpair
-			auto tj = JudgeType(ps.second);
+            // åˆ†æè¯¥è¡Œæ–‡æœ¬çš„ç±»å‹
+            // å½“å‰è¡Œçš„ç±»å‹å’Œé™¤å»è¡Œæ ‡å¿—æ€§å…³é”®å­—çš„æ­£æ–‡å†…å®¹çš„ char* çš„pair
+            auto tj = JudgeType(ps.second);
 
-			// Èç¹ûÊÇ´úÂë¿éÀàĞÍ
-			if (tj.first == blockcode) {
-				// Èç¹ûÒÑ¾­Î»ÓÚ´úÂë¿éÖĞ, Ôò push Ò»¸ö¿ÕÀàĞÍµÄ½Úµã£¬·ñÔòpush ĞÂ´úÂë¿é½Úµã
-				inblock ? now->ch.push_back(new node(nul)) : now->ch.push_back(new node(blockcode));
-				inblock = !inblock;
-				continue;
-			}
-			//Èç¹ûÒÑ¾­ÔÚ´úÂë¿éÖĞ£¬ÄÚÈİÆ´½Óµ½µ±Ç°½Úµã
-			if (inblock) {
-				now->ch.back()->elem[0] += string(s) + '\n';
-			}
+            // å¦‚æœæ˜¯ä»£ç å—ç±»å‹
+            if (tj.first == blockcode) {
+                // å¦‚æœå·²ç»ä½äºä»£ç å—ä¸­, åˆ™ push ä¸€ä¸ªç©ºç±»å‹çš„èŠ‚ç‚¹ï¼Œå¦åˆ™push
+                // æ–°ä»£ç å—èŠ‚ç‚¹
+                inblock ? now->ch.push_back(new node(nul))
+                        : now->ch.push_back(new node(blockcode));
+                inblock = !inblock;
+                continue;
+            }
+            //å¦‚æœå·²ç»åœ¨ä»£ç å—ä¸­ï¼Œå†…å®¹æ‹¼æ¥åˆ°å½“å‰èŠ‚ç‚¹
+            if (inblock) {
+                now->ch.back()->elem[0] += string(s) + '\n';
+            }
 
-			//ÆÕÍ¨¶ÎÂä£¿
-			if (tj.first == paragraph) {
-				if (now == root) {//?
-					now = findnode(ps.first);
-					now->ch.push_back(new node(paragraph));
-					now = now->ch.back();
-				}
-				bool flag = false;
-				if (newpara && !now->ch.empty()) {
-					node *ptr = nullptr;
-					for (auto i : now->ch) {
-						if (i->type == nul) {
-							ptr = i;
-						}
-					}
-					if (ptr!=nullptr){
-						mkpara(ptr);
-					}
-					flag = true;
-				}
-				if (flag){
-					now->ch.push_back(new node(paragraph));
-					now = now->ch.back();
-				}
-				now->ch.push_back(new node(nul));
-				insert(now->ch.back(), string(tj.second));
-				newpara = false;
-				continue;
-			}
+            //æ™®é€šæ®µè½ï¼Ÿ
+            if (tj.first == paragraph) {
+                if (now == root) {  //?
+                    now = findnode(ps.first);
+                    now->ch.push_back(new node(paragraph));
+                    now = now->ch.back();
+                }
+                bool flag = false;
+                if (newpara && !now->ch.empty()) {
+                    node *ptr = nullptr;
+                    for (auto i : now->ch) {
+                        if (i->type == nul) {
+                            ptr = i;
+                        }
+                    }
+                    if (ptr != nullptr) {
+                        mkpara(ptr);
+                    }
+                    flag = true;
+                }
+                if (flag) {
+                    now->ch.push_back(new node(paragraph));
+                    now = now->ch.back();
+                }
+                now->ch.push_back(new node(nul));
+                insert(now->ch.back(), string(tj.second));
+                newpara = false;
+                continue;
+            }
 
-			now = findnode(ps.first);
+            now = findnode(ps.first);
 
-			//±êÌâĞĞ£¬±êÇ©ÖĞ²åÈëÊôĞÔtag
-			if (tj.first >= h1 && tj.first <= h6) {
-				now->ch.push_back(new node(tj.first));
-				now->ch.back()->elem[0] = "tag" + to_string(++cntTag);
-				insert(now->ch.back(), string(tj.second));
-				Cins(Croot, tj.first - h1 + 1, string(tj.second), cntTag);
-			}
+            //æ ‡é¢˜è¡Œï¼Œæ ‡ç­¾ä¸­æ’å…¥å±æ€§tag
+            if (tj.first >= h1 && tj.first <= h6) {
+                now->ch.push_back(new node(tj.first));
+                now->ch.back()->elem[0] = "tag" + to_string(++cntTag);
+                insert(now->ch.back(), string(tj.second));
+                Cins(Croot, tj.first - h1 + 1, string(tj.second), cntTag);
+            }
 
+            //å¦‚æœæ˜¯æ— åºåˆ—è¡¨
+            if (tj.first == ul) {
+                if (now->ch.empty() || now->ch.back()->type != ul) {
+                    now->ch.push_back(new node(ul));
+                }
+                now = now->ch.back();
+                bool flag = false;
+                if (newpara && !now->ch.empty()) {
+                    node *ptr = nullptr;
+                    for (auto i : now->ch) {
+                        if (i->type == li) {
+                            ptr = i;
+                        }
+                    }
+                    if (ptr != nullptr) {
+                        mkpara(ptr);
+                    }
+                    flag = true;
+                }
+                now->ch.push_back(new node(li));
+                now = now->ch.back();
+                if (flag) {
+                    now->ch.push_back(new node(paragraph));
+                    now = now->ch.back();
+                }
+                insert(now, string(tj.second));
+            }
 
+            //å¦‚æœæ˜¯æœ‰åºåˆ—è¡¨
+            if (tj.first == ol) {
+                if (now->ch.empty() || now->ch.back()->type != ol) {
+                    now->ch.push_back(new node(ol));
+                }
+                now = now->ch.back();
+                bool flag = false;
+                if (newpara && !now->ch.empty()) {
+                    node *ptr = nullptr;
+                    for (auto i : now->ch) {
+                        if (i->type == li) {
+                            ptr = i;
+                        }
+                    }
+                    if (ptr != nullptr) {
+                        mkpara(ptr);
+                    }
+                    flag = true;
+                }
+                now->ch.push_back(new node(li));
+                now = now->ch.back();
+                if (flag) {
+                    now->ch.push_back(new node(paragraph));
+                    now = now->ch.back();
+                }
+                insert(now, string(tj.second));
+            }
 
-		}
+            //å¦‚æœæ˜¯å¼•ç”¨
+            if (tj.first == quote) {
+                if (now->ch.empty() || now->ch.back()->type != quote) {
+                    now->ch.push_back(new node(quote));
+                }
+                now = now->ch.back();
+                if (newpara || now->ch.empty()) {
+                    now->ch.push_back(new node(paragraph));
+                }
+                insert(now->ch.back(), string(tj.second));
+            }
 
-	}
+            newpara = false;
+        }
 
-	// »ñµÃ Markdown Ä¿Â¼
-	std::string getTableOfContents() {
-		return TOC;
-	}
+        //æ–‡ä»¶è¯»å–åˆ†æå®Œæ¯•
+        fin.close();
 
-	// »ñµÃ Markdown ÄÚÈİ
-	std::string getContents() {
-		return contents;
-	}
+        //æ·±åº¦éå†è¯­æ³•æ ‘
+        dfs(root);
 
-	//Îö¹¹º¯Êı
-	~MarkdownTransform();
+        //æ„é€ ç›®å½•
+        TOC += "<ul>";
+        for (int i = 0; i < (int)Croot->ch.size(); i++) {
+            Cdfs(Croot->ch[i], to_string(i + 1) + ".");
+        }
+        TOC += "</ul>";
+    }
+
+    //é€’å½’é”€æ¯èŠ‚ç‚¹
+    template <typename T>
+    void destroy(T *v) {
+        for (int i = 0; i < (int)v->ch.size(); i++) {
+            destroy(v->ch[i]);
+        }
+        delete v;
+    }
+
+    // è·å¾— Markdown ç›®å½•
+    std::string getTableOfContents() { return TOC; }
+
+    // è·å¾— Markdown å†…å®¹
+    std::string getContents() { return contents; }
+
+    //ææ„å‡½æ•°
+    ~MarkdownTransform() {
+        destroy<node>(root);
+        destroy<Cnode>(Croot);
+    }
 };
-
