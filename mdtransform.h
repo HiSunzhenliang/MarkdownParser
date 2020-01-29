@@ -38,7 +38,6 @@ using namespace std;
 //词法关键词枚举
 enum Token
 {
-	maxLength = 1000,
 	nul       = 0,
 	paragraph = 1,
 	href	  = 2,
@@ -90,7 +89,9 @@ struct Cnode {
 struct node {
 	//节点类型
 	int type;
+
 	vector<node*> ch;
+
 	//存三个重要属性，elem[0]保存显示内容、elem[1]保存链接、elem[2]保存title
 	string elem[3];
 
@@ -99,7 +100,7 @@ struct node {
 
 class MarkdownTransform {
 private:
-	//内容
+	//正文内容
 	string contents;
 	//目录
 	string TOC;
@@ -261,7 +262,7 @@ public:
 		int n = v->ch.size();
 		if (x == 1) {
 			v->ch.push_back(new Cnode(hd));
-			v->ch.back()->tag = "tag" + to_string(tga);
+			v->ch.back()->tag = "tag" + to_string(tag);
 			return;
 		}
 		if (!n || v->ch.back()->heading.empty()) {
@@ -270,7 +271,243 @@ public:
 		Cins(v->ch.back(), x - 1, hd, tag);
 	}
 
+	//************************************
+	// Method:    insert
+	// FullName:  MarkdownTransform::insert
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: node * v 指定节点
+	// Parameter: const string & src
+	// details :  向指定的node节点中插入要处理的串
+	//************************************
+	void insert(node *v, const string &src) {
+		int n = src.size();
+		bool incode = false, 
+			inem = false, 
+			instrong = false, 
+			inautolink = false;
+		v->ch.push_back(new node(nul));
 
+		for (int i = 0; i < n; i++) {
+			char ch = src[i];
+			if (ch == '\\') {
+				ch = src[++i];
+				v->ch.back()->elem[0] += string(1, ch);//保存内容
+				continue;
+			}
+
+			//处理行内代码 `code`
+			if (ch == '`' && !inautolink) {
+				incode ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(code));
+				incode = !incode;
+				continue;
+			}
+
+			//处理加粗 **加粗**
+			if (ch == '*' && (i < n - 1 && (src[i + 1] == '*')) && !incode && !inautolink) {
+				++i;
+				instrong ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(strong));
+				instrong = !instrong;
+				continue;
+			}
+
+			//处理斜体 _斜体_
+			if (ch == '_' && !incode && !inautolink && !instrong) {
+				inem ? v->ch.push_back(new node(nul)) : v->ch.push_back(new node(em));
+				inem = !inem;
+				continue;
+			}
+
+			//处理图片 ![image](https://web/image.png) ![image](https://web/image.png "title")
+			if (ch == '!' && (i < n - 1 && src[i + 1] == '[') && !incode && !instrong && !inem && !inautolink) {
+				//获取图片显示内容
+				for (i += 2; i < n - 1 && src[i] != ']'; i++) {
+					v->ch.back()->elem[0] += string(1, src[i]);
+				}
+				i++;
+				//获取图片链接
+				for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
+					v->ch.back()->elem[1] += string(1, src[i]);
+				}
+				//获取title
+				if (src[i] != ')') {
+					for (i++; i < n - 1 && src[i] != ')'; i++) {
+						if (src[i] == '"') {
+							v->ch.back()->elem[2] += string(1, src[i]);
+						}
+					}
+				}
+				v->ch.push_back(new node(nul));
+				continue;
+			}
+
+			//处理超链接  [github](https://github.com/) [github](https://github.com/ "title")
+			if (ch == '[' && !incode && !instrong && !inem && !inautolink) {
+				//获取链接显示内容
+				for (i++; i < n - 1 && src[i] != ']'; i++) {
+					v->ch.back()->elem[0] += string(1, src[i]);
+				}
+				i++;
+				//获取链接
+				for (i++; i < n - 1 && src[i] != ' ' && src[i] != ')'; i++) {
+					v->ch.back()->elem[1] += string(1, src[i]);
+				}
+				//获取title
+				if (src[i] != ')') {
+					for (i++; i < n - 1 && src[i] != ')'; i++) {
+						if (src[i] == '"') {
+							v->ch.back()->elem[2] += string(1, src[i]);
+						}
+					}
+				}
+				v->ch.push_back(new node(nul));
+				continue;
+			}
+
+			//普通文本
+			v->ch.back()->elem[0] += string(1, ch);
+			if (!inautolink) {
+				v->ch.back()->elem[1] += string(1, ch);
+			}
+		}
+
+		//结尾两个空格，换行
+		if (src.size() >= 2) {
+			if (src.at(src.size() - 1) == ' '&&src.at(src.size() - 2) == ' ') {
+				v->ch.push_back(new node(br));
+			}
+		}
+	}
+
+	//************************************
+	// Method:    isCutline
+	// FullName:  MarkdownTransform::isCutline
+	// Access:    public 
+	// Returns:   bool
+	// Qualifier:
+	// Parameter: char * src
+	// details :  判断是否换行,Markdown 支持使用 ---进行人为分割
+	//************************************
+	bool isCutline(char *src) {
+		int cnt = 0;
+		char *ptr = src;
+		while (*ptr) {
+			// 如果不是 空格、tab、- 或 *，那么则不需要换行
+			if (*ptr != ' '&&*ptr != '\t'&&*ptr != '-') {
+				return false;
+			}
+			if (*ptr == '-'){
+				cnt++;
+			}
+			ptr++;
+		}
+		// 如果出现 --- 则需要增加一个分割线, 这时需要换行
+		return (cnt >= 3);
+	}
+
+	//************************************
+	// Method:    mkpara
+	// FullName:  MarkdownTransform::mkpara
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: node * v
+	// details :  拿到一个段落文本
+	//************************************
+	void mkpara(node *v) {
+		if (v->ch.size() == 1u && v->ch.back()->type == paragraph) { //1u 1 unsigned int
+			return;
+		}
+		if (v->type == paragraph) {
+			return;
+		}
+		if (v->type == nul) {
+			v->type = paragraph;
+			return;
+		}
+		node *x = new node(paragraph);
+		x->ch = v->ch;
+		v->ch.clear();
+		v->ch.push_back(x);
+	}
+
+	//语法树的遍历是需要深度优先的，而对目录的深度遍历和正文内容的深度遍历逻辑并不一样
+
+	//************************************
+	// Method:    dfs
+	// FullName:  MarkdownTransform::dfs
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: node * v
+	// details :  深度优先遍历正文
+	//************************************
+	void dfs(node *v) {
+		if (v->type == paragraph && v->elem[0].empty() && v->ch.empty()) {
+			return;
+		}
+
+		contents += frontTag[v->type];
+		bool flag = true;
+
+		//处理标题，支持目录进行跳转
+		if (isHeading(v)) {
+			contents += "id=\"" + v->elem[0] + "\">";
+			flag = false;
+		}
+
+		//处理超链接
+		if (isHref(v)) {
+			contents += "<a href=\"" + v->elem[1] + "\"title=\"" + v->elem[2] + "\">" + v->elem[0] + "</a>";
+			flag = false;
+		}
+
+		//处理图片
+		if (isImage(v)) {
+			contents += "<img alt=\"" + v->elem[0] + "\"src=\"" + v->elem[1] + "\"title=\"" + v->elem[2] + "\"/>";
+			flag = false;
+		}
+
+		// 如果上面三者都不是, 则直接添加内容
+		if (flag){
+			contents += v->elem[0];
+			flag = false;
+		}
+
+		// 递归遍历所有
+		for (int i = 0; i < v->ch.size(); i++) {
+			dfs(v->ch[i]);
+		}
+
+		// 拼接结束标签
+		contents += backTag[v->type];
+	}
+
+	//目录的遍历和正文内容的遍历差别在于，目录的展示方式是需要使用无序列表的形式展示在 HTML 中
+	//************************************
+	// Method:    Cdfs
+	// FullName:  MarkdownTransform::Cdfs
+	// Access:    public 
+	// Returns:   void
+	// Qualifier:
+	// Parameter: Cnode * v
+	// Parameter: string index
+	// details :  遍历目录
+	//************************************
+	void Cdfs(Cnode *v, string index) {
+		TOC += "<li>\n";
+		TOC += "<a href=\"#" + v->tag + "\">" + index + " " + v->heading + "</a>\n";
+		int n = v->ch.size();
+		if (n){
+			TOC += "<ul>\n";
+			for (int i = 0; i < n; i++) {
+				Cdfs(v->ch[i], index + to_string(i + 1) + ".");
+			}
+			TOC += "</ul>\n";
+		}
+		TOC += "</li>\n";
+	}
 
 
 	//构造函数
