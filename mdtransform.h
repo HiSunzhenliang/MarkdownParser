@@ -110,7 +110,7 @@ private:
 
 	//让目录能够正确的索引到 HTML 的内容位置， cntTag 的进行记录
 	int cntTag = 0;
-	char s[maxLength];
+	char s[maxLength];//读取一行内容buf
 
 public:
 
@@ -253,9 +253,9 @@ public:
 	// Returns:   void
 	// Qualifier:
 	// Parameter: Cnode * v
-	// Parameter: int x ？
+	// Parameter: int x 目录级别序号
 	// Parameter: const string & hd
-	// Parameter: int tag  tag 标签来标记这个目录所指向的内容
+	// Parameter: int tag  tag序号 标签来标记这个目录所指向的内容
 	// details :  递归Cnode节点插入
 	//************************************
 	void Cins(Cnode *v, int x, const string &hd, int tag) {
@@ -432,6 +432,7 @@ public:
 		v->ch.push_back(x);
 	}
 
+	//遍历与生成
 	//语法树的遍历是需要深度优先的，而对目录的深度遍历和正文内容的深度遍历逻辑并不一样
 
 	//************************************
@@ -509,9 +510,114 @@ public:
 		TOC += "</li>\n";
 	}
 
+	//************************************
+	// Method:    MarkdownTransform
+	// FullName:  MarkdownTransform::MarkdownTransform
+	// Access:    public 
+	// Returns:   
+	// Qualifier:
+	// Parameter: const std::string & filename
+	// details :  构造函数对文档树结构处理，生成内容与目录
+	//************************************
+	MarkdownTransform(const std::string &filename) {
+		// 首先为文档的树结构进行初始化，并将当前指针 now 指向根节点
+		Croot = new Cnode("");
+		root = new node(nul);
+		now = root;
 
-	//构造函数
-	MarkdownTransform(const std::string &filename);
+		//从文件流中读取文件
+		std::ifstream fin(filename);
+
+		//默认不是新段落，默认不在代码块内
+		bool newpara = false;
+		bool inblock = false;
+
+		//读取到eof为止
+		while (!fin.eof()) {
+			//从文件读取一行
+			fin.getline(s, maxLength);
+
+			//处理不在代码块且需要换行
+			if (!inblock&&isCutline(s)) {
+				now = root;
+				now->ch.push_back(new node(hr));
+				newpara = false;
+				continue;
+			}
+			
+			// std::pair 实质上是一个结构体, 可以将两个数据组合成一个数据
+			// 计算一行中开始的空格和 Tab 数
+			// 由空格数和有内容处的 char* 指针组成的
+			auto ps = start(s);
+
+			// 如果没有位于代码块中, 且没有统计到空格和 Tab, 则直接读取下一行
+			if (!inblock&&ps.second == nullptr) {
+				now = root;
+				newpara = true;
+				continue;
+			}
+
+			// 分析该行文本的类型
+			// 当前行的类型和除去行标志性关键字的正文内容的 char* 的pair
+			auto tj = JudgeType(ps.second);
+
+			// 如果是代码块类型
+			if (tj.first == blockcode) {
+				// 如果已经位于代码块中, 则 push 一个空类型的节点，否则push 新代码块节点
+				inblock ? now->ch.push_back(new node(nul)) : now->ch.push_back(new node(blockcode));
+				inblock = !inblock;
+				continue;
+			}
+			//如果已经在代码块中，内容拼接到当前节点
+			if (inblock) {
+				now->ch.back()->elem[0] += string(s) + '\n';
+			}
+
+			//普通段落？
+			if (tj.first == paragraph) {
+				if (now == root) {//?
+					now = findnode(ps.first);
+					now->ch.push_back(new node(paragraph));
+					now = now->ch.back();
+				}
+				bool flag = false;
+				if (newpara && !now->ch.empty()) {
+					node *ptr = nullptr;
+					for (auto i : now->ch) {
+						if (i->type == nul) {
+							ptr = i;
+						}
+					}
+					if (ptr!=nullptr){
+						mkpara(ptr);
+					}
+					flag = true;
+				}
+				if (flag){
+					now->ch.push_back(new node(paragraph));
+					now = now->ch.back();
+				}
+				now->ch.push_back(new node(nul));
+				insert(now->ch.back(), string(tj.second));
+				newpara = false;
+				continue;
+			}
+
+			now = findnode(ps.first);
+
+			//标题行，标签中插入属性tag
+			if (tj.first >= h1 && tj.first <= h6) {
+				now->ch.push_back(new node(tj.first));
+				now->ch.back()->elem[0] = "tag" + to_string(++cntTag);
+				insert(now->ch.back(), string(tj.second));
+				Cins(Croot, tj.first - h1 + 1, string(tj.second), cntTag);
+			}
+
+
+
+		}
+
+	}
 
 	// 获得 Markdown 目录
 	std::string getTableOfContents() {
