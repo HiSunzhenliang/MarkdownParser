@@ -475,15 +475,15 @@ class MarkdownTransform {
 
         //处理超链接
         if (isHref(v)) {
-            contents += "<a href=\"" + v->elem[1] + "\"title=\"" + v->elem[2] +
+            contents += "<a href=\"" + v->elem[1] + "\" title=\"" + v->elem[2] +
                         "\">" + v->elem[0] + "</a>";
             flag = false;
         }
 
         //处理图片
         if (isImage(v)) {
-            contents += "<img alt=\"" + v->elem[0] + "\"src=\"" + v->elem[1] +
-                        "\"title=\"" + v->elem[2] + "\" />";
+            contents += "<img alt=\"" + v->elem[0] + "\" src=\"" + v->elem[1] +
+                        "\" title=\"" + v->elem[2] + "\" />";
             flag = false;
         }
 
@@ -592,6 +592,7 @@ class MarkdownTransform {
             //如果已经在代码块中，内容拼接到当前节点
             if (inblock) {
                 now->ch.back()->elem[0] += string(s) + '\n';
+                continue;
             }
 
             //普通段落？
