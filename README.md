@@ -1,9 +1,8 @@
 # MarkdownParser
 
-[TOC] 
+[TOC]
 
 ### 一、介绍
-
 
 本次项目将针对 Markdown 的一些最常用语法，手动实现一个 Markdown 解析器，作为展示，还将为文档生成目录。
 
@@ -122,8 +121,6 @@ int main() {
 > sudo apt-get install tree
 > ```
 >
-
-
 
 ### 四、mdtransform 设计
 
@@ -248,7 +245,7 @@ public:
 首先应该明确的一个概念就是，Markdown 其实和 HTML 类似，他们都有类似 DOM 树的结构，这也就不可避免的让需要去实现一个树结构，为此：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -300,11 +297,9 @@ char s[maxLength];
 
 形如一颗倒长的树。一颗家谱树，而家谱树本身就是一种模型，其典型用法是表示表示人类家族谱系。
 
-它很容易表明家族成员之间的关系，把复杂的关系简明地表示出来，因此这种模型非常适合表示一份html的文档：
+它很容易表明家族成员之间的关系，把复杂的关系简明地表示出来，因此这种模型非常适合表示一份 html 的文档：
 
 ![img](https:////upload-images.jianshu.io/upload_images/16749538-64b1ae6106efded7.png?imageMogr2/auto-orient/strip|imageView2/2/w/486/format/webp)
-
-
 
 ### 六、具体实现
 
@@ -313,7 +308,7 @@ char s[maxLength];
 空格其实并不影响整个 Markdown 的解析，所以最好的办法就是统一将每行开始处的空格和 Tab 进行一个预先处理。
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -344,7 +339,7 @@ inline pair<int, char *> start(char *src) {
 Markdown 的解析简单，就简单在此。关键性的语法关键词其实都是位于每行的行首的。 比如标题的 `#`，又比如列表的 `-` 符号。
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -390,7 +385,7 @@ inline pair<int, char *> JudgeType(char *src) {
 #### 6.3 类型获取
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -413,7 +408,7 @@ inline bool isHref(node *v) {
 当发现一个新的语法结构时，在造树的过程中，是有必要对需要的节点进行搜索的，通过给定一个深度，来找到想要查找的节点，所以需要实现这个逻辑：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -436,7 +431,7 @@ inline node* findnode(int depth) {
 节点的插入分为两种类型，一种是向 Cnode 结构的树种插入目录，另一种则是向 `node` 结构的树种插入解析内容，插入这些结构时，为了让目录能够正确跳转到正文所对应的内容，所以设置了 `tag` 标签来标记这个目录所指向的内容
 
 ```cpp
-// 
+//
 // mdtransform.hpp
 //
 
@@ -457,7 +452,7 @@ void Cins(Cnode *v, int x, const string &hd, int tag) {
 而对于正文的部分，需要处理的复杂逻辑并不多，难度较大的属于如何在一个段落中处理图片和超链接的情况。这就意味着需要一个字符一个字符的进行判断和处理。这也是为什么在处理解析代码的时候，都是使用 C 风格的字符串以及字符指针来进行处理，而不是简单的使用 `std::string`。
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -544,10 +539,10 @@ void insert(node *v, const string &src) {
 
 #### 6.6 换行的处理和段落生成
 
-是否换行在 Markdown 中十分重要，因为Markdown 支持使用 `---`进行人为分割，同时，在代码块中又不能破坏代码的属性，所以一行内容是否在 HTML 中需要换行，就变得十分的重要：
+是否换行在 Markdown 中十分重要，因为 Markdown 支持使用 `---`进行人为分割，同时，在代码块中又不能破坏代码的属性，所以一行内容是否在 HTML 中需要换行，就变得十分的重要：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -571,7 +566,7 @@ inline bool isCutline(char *src) {
 大部分情况下，都会拿到一个段落文本，所以不妨将这个逻辑抽离出来：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -596,7 +591,7 @@ inline void mkpara(node *v) {
 语法树的遍历是需要深度优先的，而对目录的深度遍历和正文内容的深度遍历逻辑并不一样，所以还需要分开对这两部分逻辑进行实现：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -643,7 +638,7 @@ void dfs(node *v) {
 目录的遍历和正文内容的遍历差别在于，目录的展示方式是需要使用无需列表的形式被展示在 HTML 中，因此：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -667,7 +662,7 @@ void Cdfs(Cnode *v, string index) {
 有了上面的基本操作的铺垫，下面来开始实现关键性的构造函数：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -845,7 +840,7 @@ MarkdownTransform(const std::string &filename) {
 在创建整个语法树的过程中，都是使用了动态创建的手段，因此必须在析构函数中释放相关的内存。有 Cnode 和 node 两个结构，就意味着需要事先两套不同的释放机制吗？事实上并不需要，利用模板可以在一个函数内解决这个问题，这得益于在实现这两个结构的时候，都使用了同样的成员`ch`：
 
 ```cpp
-// 
+//
 // mdtransform.h
 //
 
@@ -869,48 +864,3 @@ g++ main.cpp -std=c++11
 这样的话，就可以打开 `index.html` 来查看最后生成的效果了：
 
 同时，可以点击目录中的标签，跳转到相应的内容位置。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
