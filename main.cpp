@@ -1,6 +1,6 @@
 /************************************
  * @file    : main.cpp
- * @brief   : test for git
+ * @brief   : test for git add 2
  * @details :
  * @author  : Alliswell
  * @date    : 2020-1-28
